@@ -2,7 +2,7 @@
 name=JointoQGIS
 qgisMinimumVersion=3.28
 description=Excel / CSV を自動的に QGIS レイヤへ Join する同期プラグイン
-version=1.0.0
+version=1.0.1
 author=Noriaki,Akahane
 email=akahane.noriaki@gmail.com
 about=Exports Excel sheets to CSV and joins to a layer. Includes debug log and polling fallback.

@@ -374,21 +374,7 @@ class ExcelCSVLatestJoinAllInOne:
             except Exception:
                 pass
 
-        # --- aliases for persistence helpers ---
-        try:
-            self.txt_excel = self._txt_excel
-            self.txt_csv_folder = self._txt_csv
-            self.cbo_sheet = self._cmb_sheet
-            self.cbo_layer = self._cmb_layer
-            self.cbo_layer_field = self._cmb_layer_key
-            self.cbo_csv_field = self._cmb_csv_key
-            self.spin_interval = self._spin_interval
-            self.chk_autoshow = self._chk_auto_show
-        except Exception:
-            pass
-
     def unload(self):
-
         try:
             if self.action:
                 self.iface.removePluginMenu(self.PLUGIN_NAME, self.action)
@@ -538,6 +524,18 @@ class ExcelCSVLatestJoinAllInOne:
 
             self.dock.setWidget(w)
             self.iface.mainWindow().addDockWidget(Qt.RightDockWidgetArea, self.dock)
+            # set up aliases now that widgets exist
+            try:
+                self.txt_excel = self._txt_excel
+                self.txt_csv_folder = self._txt_csv
+                self.cbo_sheet = self._cmb_sheet
+                self.cbo_layer = self._cmb_layer
+                self.cbo_layer_field = self._cmb_layer_key
+                self.cbo_csv_field = self._cmb_csv_key
+                self.spin_interval = self._spin_interval
+                self.chk_autoshow = self._chk_auto_show
+            except Exception:
+                pass
             # load settings (project only when opted-in)
             try:
                 v = self._prj_get('persist_enabled', '0')
@@ -621,19 +619,6 @@ class ExcelCSVLatestJoinAllInOne:
     def _load_global_settings(self) -> None:
         # disabled: project-only persistence
         return
-
-    def _on_project_read(self):
-        self._load_project_settings()
-        if self.dock is not None:
-            try:
-                self._apply_state_to_ui()
-            except Exception:
-                pass
-        if self.auto_show_dock:
-            try:
-                self.show_dock()
-            except Exception:
-                pass
 
     def _on_project_write(self):
         try:
@@ -1196,7 +1181,7 @@ class ExcelCSVLatestJoinAllInOne:
     def _get_interval_sec(self) -> int:
         """Return watch interval snapped to 30 or 60 seconds."""
         try:
-            v = self._get_interval_sec()
+            v = int(self._spin_interval.value()) if self._spin_interval else 30
         except Exception:
             v = 30
         return 30 if v < 45 else 60
@@ -1253,7 +1238,7 @@ class ExcelCSVLatestJoinAllInOne:
             # Diagnostics: verify that trailing text columns (e.g. R8) are really present in the exported CSV.
             try:
                 import csv as _csv
-                with open(self.csv_path, "r", encoding="utf-8-sig", newline="") as _f:
+                with open(self.latest_csv, "r", encoding="utf-8-sig", newline="") as _f:
                     _reader = _csv.DictReader(_f)
                     _fields = _reader.fieldnames or []
                     if "R8" in _fields:
