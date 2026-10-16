@@ -23,11 +23,21 @@ from qgis.PyQt.QtWidgets import (
     QPushButton, QLabel, QLineEdit, QComboBox, QCheckBox, QSpinBox,
     QFileDialog, QMessageBox
 )
+try:  # Qt6 (QGIS 4): QAction は QtGui へ移動
+    from qgis.PyQt.QtGui import QAction
+except ImportError:  # Qt5 (QGIS 3)
+    from qgis.PyQt.QtWidgets import QAction
 from qgis.core import (
     QgsProject, QgsVectorLayer, QgsVectorLayerJoinInfo,
     QgsVectorFileWriter, QgsCoordinateTransformContext,
     QgsProviderRegistry, QgsEditorWidgetSetup
 )
+
+def _is_checked(state) -> bool:
+    """stateChanged(int) の値がチェック状態か判定（Qt5/Qt6 両対応）。"""
+    checked = Qt.CheckState.Checked
+    return int(state) == int(getattr(checked, "value", checked))
+
 
 try:
     import openpyxl  # type: ignore
@@ -345,7 +355,6 @@ class ExcelCSVLatestJoinAllInOne:
             pass
 
     def initGui(self):
-        from qgis.PyQt.QtWidgets import QAction
         self.action = QAction("Excel/CSV 同期", self.iface.mainWindow())
         self.action.triggered.connect(self.show_dock)
         self.iface.addPluginToMenu(self.PLUGIN_NAME, self.action)
@@ -486,7 +495,7 @@ class ExcelCSVLatestJoinAllInOne:
                 self.persist_enabled = False
             self._set_chk_checked_blocked(self._chk_persist, self.persist_enabled)
             def _on_persist_changed(state: int):
-                self.persist_enabled = (state == Qt.Checked)
+                self.persist_enabled = _is_checked(state)
                 # Project-only persistence
                 try:
                     if self.persist_enabled:
@@ -523,7 +532,7 @@ class ExcelCSVLatestJoinAllInOne:
             root.addLayout(row)
 
             self.dock.setWidget(w)
-            self.iface.mainWindow().addDockWidget(Qt.RightDockWidgetArea, self.dock)
+            self.iface.mainWindow().addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, self.dock)
             # set up aliases now that widgets exist
             try:
                 self.txt_excel = self._txt_excel
@@ -606,7 +615,7 @@ class ExcelCSVLatestJoinAllInOne:
                 self._timer.start()
 
     def _on_auto_show_changed(self, state: int):
-        self.auto_show_dock = (state == Qt.Checked)
+        self.auto_show_dock = _is_checked(state)
         try:
             self._qsettings.setValue(f"{self.SETTINGS_NS}/auto_show_dock", self.auto_show_dock)
         except Exception:
@@ -1351,7 +1360,7 @@ class ExcelCSVLatestJoinAllInOne:
             opts.fileEncoding = "UTF-8"
             ctx = QgsCoordinateTransformContext()
             res, _, _ = QgsVectorFileWriter.writeAsVectorFormatV2(vl, latest, ctx, opts)
-            if res != QgsVectorFileWriter.NoError:
+            if res != QgsVectorFileWriter.WriterError.NoError:
                 self._log(f"export(ogr) failed: writer error code {res}")
                 return False
 
